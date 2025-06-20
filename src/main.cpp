@@ -4,8 +4,11 @@
 #include "Map.h"
 
 int main(){
-    const int ROWS = 10, COLS = 10;
-    const float CELL = 50.f;
+     const float CELL = 50.f;
+    Map map("maps/map1.txt", CELL);
+    int ROWS = map.getRows();
+    int COLS = map.getCols();
+    
     sf::RenderWindow window(
         sf::VideoMode(COLS * CELL, ROWS * CELL),
         "Escape the Grid"
@@ -13,9 +16,7 @@ int main(){
     window.setFramerateLimit(60);
 
     Grid grid(ROWS, COLS, CELL);
-    Map map(ROWS, COLS, CELL);
 
-    // Posición inicial sacada del mapa
     auto [startR, startC] = map.getStart();
     int pr = startR, pc = startC;
     sf::RectangleShape player(sf::Vector2f(CELL-2, CELL-2));
