@@ -3,8 +3,9 @@ CXX      := g++
 CXXFLAGS := -std=c++17 -m64 -Iinclude -I/mingw64/include
 LDFLAGS  := -m64 -L/mingw64/lib -lsfml-graphics -lsfml-window -lsfml-system
 
-SRC  := src/main.cpp src/Grid.cpp
-OBJ  := $(SRC:src/%.cpp=build/%.o)
+# Toma todos los .cpp de src
+SRC  := $(wildcard src/*.cpp)
+OBJ  := $(patsubst src/%.cpp,build/%.o,$(SRC))
 BIN  := EscapeGrid.exe
 
 all: $(BIN)
