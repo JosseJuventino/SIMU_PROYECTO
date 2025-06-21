@@ -1,7 +1,8 @@
 #include "Grid.h"
 
 Grid::Grid(int rows, int cols, float cellSize)
-: rows_(rows), cols_(cols), cellSize_(cellSize), lines_(sf::Lines) {
+: rows_(rows), cols_(cols), cellSize_(cellSize), lines_(sf::Lines)
+{
     // Líneas verticales
     for (int i = 0; i <= cols_; ++i) {
         float x = i * cellSize_;
