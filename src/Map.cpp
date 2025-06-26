@@ -190,3 +190,41 @@ void Map::updateWind()
         br.active = (windDir_ % 2 == 0 ? (dc == 0) : (dr == 0));
     }
 }
+
+void Map::resetFromFile(const std::string& filename)
+{
+    grid_.clear();
+    bridges_.clear();
+    windDir_ = 0;
+    windCounter_ = 0;
+
+    std::ifstream in(filename);
+    if (!in)
+        throw std::runtime_error("No se pudo abrir mapa: " + filename);
+
+    std::string line;
+    while (std::getline(in, line))
+    {
+        std::istringstream ss(line);
+        std::vector<int> row;
+        int v;
+        while (ss >> v)
+            row.push_back(v);
+        if (!grid_.empty() && row.size() != grid_[0].size())
+            throw std::runtime_error("Columnas inconsistentes en " + filename);
+        grid_.push_back(row);
+    }
+
+    rows_ = int(grid_.size());
+    cols_ = rows_ ? int(grid_[0].size()) : 0;
+
+    // Restaurar puentes
+    bridges_ = {
+        {{2, 2}, {2, 3}, false},
+        {{4, 5}, {5, 5}, false},
+        {{7, 1}, {7, 2}, false},
+    };
+
+    windCounter_ = 4;  // fuerza updateWind en el siguiente llamado
+    updateWind();
+}

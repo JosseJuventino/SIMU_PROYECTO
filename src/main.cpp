@@ -4,128 +4,174 @@
 #include "Map.h"
 #include "PathFinder.h"
 
-int main() {
+int main()
+{
     const float CELL = 50.f;
-    // 1) Carga mapa
     Map map("maps/map1.txt", CELL);
     int ROWS = map.getRows(), COLS = map.getCols();
 
-    // 2) Ventana (+40 px HUD)
     sf::RenderWindow window(
-        sf::VideoMode(COLS*CELL, ROWS*CELL + 40),
-        "Escape the Grid"
-    );
+        sf::VideoMode(COLS * CELL, ROWS * CELL + 40),
+        "Escape the Grid");
     window.setFramerateLimit(60);
 
-    // 3) Grid
     Grid grid(ROWS, COLS, CELL);
 
-    // 4) Sprite jugador
     sf::Texture playerTex;
-    if (!playerTex.loadFromFile("assets/sprites/character.png")) {
-        std::cerr<<"ERROR: no pude cargar character.png\n";
+    if (!playerTex.loadFromFile("assets/sprites/character.png"))
+    {
+        std::cerr << "ERROR: no pude cargar character.png\n";
         return 1;
     }
     sf::Sprite playerSpr(playerTex);
     float pscale = CELL / float(playerTex.getSize().x);
     playerSpr.setScale(pscale, pscale);
 
-    // 5) Inicio
     auto [sr, sc] = map.getStart();
-    int pr=sr, pc=sc;
-    playerSpr.setPosition(pc*CELL, pr*CELL);
+    int pr = sr, pc = sc;
+    playerSpr.setPosition(pc * CELL, pr * CELL);
 
-    // 6) HUD
-    int itemsCollected=0;
+    int itemsCollected = 0;
     sf::Font font;
-    if(!font.loadFromFile("assets/fonts/LiberationSans-Regular.ttf")){
-        std::cerr<<"ERROR: no pude cargar la fuente\n";
+    if (!font.loadFromFile("assets/fonts/LiberationSans-Regular.ttf"))
+    {
+        std::cerr << "ERROR: no pude cargar la fuente\n";
         return 1;
     }
     sf::Text hud("", font, 20);
     hud.setFillColor(sf::Color::White);
-    hud.setPosition(5, ROWS*CELL+5);
+    hud.setPosition(5, ROWS * CELL + 5);
 
-    // 7) Solver TSP
-    auto path = findCollectAllPath(map, {sr,sc}, map.getGoal());
-    bool showPath=false;
+    auto path = findCollectAllPath(map, {sr, sc}, map.getGoal());
+    bool showPath = false;
 
-    // 8) Botón
-    sf::RectangleShape button({100,30});
-    button.setFillColor({70,70,70});
+    sf::RectangleShape button({100, 30});
+    button.setFillColor({70, 70, 70});
     button.setOutlineColor(sf::Color::White);
     button.setOutlineThickness(1);
-    sf::Vector2f btnPos(COLS*CELL-110, ROWS*CELL+5);
+    sf::Vector2f btnPos(COLS * CELL - 110, ROWS * CELL + 5);
     button.setPosition(btnPos);
     sf::Text btnText("Mostrar ruta", font, 16);
     btnText.setFillColor(sf::Color::White);
-    btnText.setPosition(btnPos+sf::Vector2f(10,5));
+    btnText.setPosition(btnPos + sf::Vector2f(10, 5));
 
-    // 9) Ruta shape
-    sf::RectangleShape stepShape({CELL-2, CELL-2});
-    stepShape.setFillColor({255,255,0,150});
+    sf::RectangleShape stepShape({CELL - 2, CELL - 2});
+    stepShape.setFillColor({255, 255, 0, 150});
 
-    // 10) Mecánicas adicionales
-    int turnCount=0;
-    constexpr int EVENT_PERIOD=15;
-    constexpr int MAX_BATTERY=100;
-    int battery=MAX_BATTERY;
+    int turnCount = 0;
+    constexpr int EVENT_PERIOD = 15;
+    constexpr int MAX_BATTERY = 100;
+    int battery = MAX_BATTERY;
 
-    // Bucle principal
-    while(window.isOpen()){
+    bool gameOver = false;
+    std::string gameMessage = "";
+
+    while (window.isOpen())
+    {
         sf::Event e;
-        while(window.pollEvent(e)){
-            if(e.type==sf::Event::Closed)
+        while (window.pollEvent(e))
+        {
+            if (e.type == sf::Event::Closed)
                 window.close();
 
-            // click botón
-            if(e.type==sf::Event::MouseButtonPressed
-             && e.mouseButton.button==sf::Mouse::Left)
+            if (e.type == sf::Event::MouseButtonPressed && e.mouseButton.button == sf::Mouse::Left)
             {
-                sf::Vector2f m(e.mouseButton.x,e.mouseButton.y);
-                if(button.getGlobalBounds().contains(m))
+                sf::Vector2f m(e.mouseButton.x, e.mouseButton.y);
+                if (button.getGlobalBounds().contains(m))
                     showPath = !showPath;
             }
 
-            // movimiento
-            if(e.type==sf::Event::KeyPressed){
-                if(battery<=0) continue;
-                int nr=pr, nc=pc;
-                if(e.key.code==sf::Keyboard::Left)  nc--;
-                if(e.key.code==sf::Keyboard::Right) nc++;
-                if(e.key.code==sf::Keyboard::Up)    nr--;
-                if(e.key.code==sf::Keyboard::Down)  nr++;
+            if (gameOver && e.type == sf::Event::KeyPressed && e.key.code == sf::Keyboard::R)
+            {
+                map.resetFromFile("maps/map1.txt");
+                ROWS = map.getRows();
+                COLS = map.getCols();
 
-                bool pass = !map.isWall(nr,nc) || map.hasActiveBridge(pr,pc,nr,nc);
-                if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS && pass){
-                    pr=nr; pc=nc;
-                    playerSpr.setPosition(pc*CELL, pr*CELL);
+                grid = Grid(ROWS, COLS, CELL);
+
+                std::tie(pr, pc) = map.getStart();
+                playerSpr.setPosition(pc * CELL, pr * CELL);
+
+                battery = MAX_BATTERY;
+                turnCount = 0;
+                itemsCollected = 0;
+                path = findCollectAllPath(map, {pr, pc}, map.getGoal());
+
+                hud.setPosition(5, ROWS * CELL + 5);
+
+                btnPos = sf::Vector2f(COLS * CELL - 110, ROWS * CELL + 5);
+                button.setPosition(btnPos);
+                btnText.setPosition(btnPos + sf::Vector2f(10, 5));
+
+                gameOver = false;
+                showPath = false;
+
+                window.clear();
+                map.draw(window);
+                window.display();
+            }
+
+            if (!gameOver && e.type == sf::Event::KeyPressed)
+            {
+                if (battery <= 0)
+                    continue;
+                int nr = pr, nc = pc;
+                if (e.key.code == sf::Keyboard::Left)
+                    nc--;
+                if (e.key.code == sf::Keyboard::Right)
+                    nc++;
+                if (e.key.code == sf::Keyboard::Up)
+                    nr--;
+                if (e.key.code == sf::Keyboard::Down)
+                    nr++;
+
+                bool pass = !map.isWall(nr, nc) || map.hasActiveBridge(pr, pc, nr, nc);
+                if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && pass)
+                {
+                    pr = nr;
+                    pc = nc;
+                    playerSpr.setPosition(pc * CELL, pr * CELL);
                     battery--;
                     turnCount++;
-                    if(turnCount%EVENT_PERIOD==0)
+                    if (turnCount % EVENT_PERIOD == 0)
                         map.updateWind();
 
-                    if(map.isItem(pr,pc)){
-                        map.removeItem(pr,pc);
+                    if (map.isItem(pr, pc))
+                    {
+                        map.removeItem(pr, pc);
                         itemsCollected++;
                     }
+
+                    if (showPath)
+                        path = findPathBFS(map, {pr, pc}, map.getGoal());
+
+                    if (std::make_pair(pr, pc) == map.getGoal())
+                    {
+                        gameOver = true;
+                        gameMessage = "¡GANASTE!";
+                    }
+                }
+
+                if (battery <= 0 && !gameOver)
+                {
+                    gameOver = true;
+                    gameMessage = "¡SIN BATERÍA!";
                 }
             }
         }
 
-        // actualiza HUD
         hud.setString(
-            "Items: "+std::to_string(itemsCollected)+
-            "   Batería: "+std::to_string(battery)
-        );
+            "Items: " + std::to_string(itemsCollected) +
+            "   Batería: " + std::to_string(battery));
 
-        // dibujado
         window.clear(sf::Color::Black);
         grid.draw(window);
         map.draw(window);
-        if(showPath){
-            for(auto [r,c]: path){
-                stepShape.setPosition(c*CELL+1, r*CELL+1);
+        if (showPath)
+        {
+            for (auto [r, c] : path)
+            {
+                stepShape.setPosition(c * CELL + 1, r * CELL + 1);
                 window.draw(stepShape);
             }
         }
@@ -133,6 +179,15 @@ int main() {
         window.draw(hud);
         window.draw(button);
         window.draw(btnText);
+
+        if (gameOver)
+        {
+            sf::Text endText(gameMessage + " - Presiona R", font, 30);
+            endText.setFillColor(sf::Color::Red);
+            endText.setPosition(COLS * CELL / 2.f - 150, ROWS * CELL / 2.f - 20);
+            window.draw(endText);
+        }
+
         window.display();
     }
 

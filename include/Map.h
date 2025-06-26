@@ -31,6 +31,7 @@ public:
 
     int getRows() const { return rows_; }
     int getCols() const { return cols_; }
+    void resetFromFile(const std::string& filename);
 
 private:
     int rows_, cols_;
