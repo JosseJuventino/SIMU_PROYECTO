@@ -78,7 +78,21 @@ int main()
             {
                 sf::Vector2f m(e.mouseButton.x, e.mouseButton.y);
                 if (button.getGlobalBounds().contains(m))
+                {
                     showPath = !showPath;
+
+                    if (showPath)
+                    {
+                        button.setFillColor(sf::Color(150, 150, 150));
+                        btnText.setString("Ocultar ruta");
+                        path = findPathBFS(map, {pr, pc}, map.getGoal());
+                    }
+                    else
+                    {
+                        button.setFillColor(sf::Color(70, 70, 70));
+                        btnText.setString("Mostrar ruta");
+                    }
+                }
             }
 
             if (gameOver && e.type == sf::Event::KeyPressed && e.key.code == sf::Keyboard::R)
@@ -105,6 +119,8 @@ int main()
 
                 gameOver = false;
                 showPath = false;
+                button.setFillColor(sf::Color(70, 70, 70));
+                btnText.setString("Mostrar ruta");
 
                 window.clear();
                 map.draw(window);
@@ -113,49 +129,65 @@ int main()
 
             if (!gameOver && e.type == sf::Event::KeyPressed)
             {
-                if (battery <= 0)
-                    continue;
                 int nr = pr, nc = pc;
-                if (e.key.code == sf::Keyboard::Left)
-                    nc--;
-                if (e.key.code == sf::Keyboard::Right)
-                    nc++;
-                if (e.key.code == sf::Keyboard::Up)
-                    nr--;
-                if (e.key.code == sf::Keyboard::Down)
-                    nr++;
+                bool moved = false;
 
-                bool pass = !map.isWall(nr, nc) || map.hasActiveBridge(pr, pc, nr, nc);
-                if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && pass)
+                switch (e.key.code)
                 {
-                    pr = nr;
-                    pc = nc;
-                    playerSpr.setPosition(pc * CELL, pr * CELL);
-                    battery--;
-                    turnCount++;
-                    if (turnCount % EVENT_PERIOD == 0)
-                        map.updateWind();
-
-                    if (map.isItem(pr, pc))
-                    {
-                        map.removeItem(pr, pc);
-                        itemsCollected++;
-                    }
-
-                    if (showPath)
-                        path = findPathBFS(map, {pr, pc}, map.getGoal());
-
-                    if (std::make_pair(pr, pc) == map.getGoal())
-                    {
-                        gameOver = true;
-                        gameMessage = "¡GANASTE!";
-                    }
+                case sf::Keyboard::Left:
+                    nc--;
+                    moved = true;
+                    break;
+                case sf::Keyboard::Right:
+                    nc++;
+                    moved = true;
+                    break;
+                case sf::Keyboard::Up:
+                    nr--;
+                    moved = true;
+                    break;
+                case sf::Keyboard::Down:
+                    nr++;
+                    moved = true;
+                    break;
+                default:
+                    break;
                 }
 
-                if (battery <= 0 && !gameOver)
+                if (moved && battery > 0)
                 {
-                    gameOver = true;
-                    gameMessage = "¡SIN BATERÍA!";
+                    bool pass = !map.isWall(nr, nc) || map.hasActiveBridge(pr, pc, nr, nc);
+                    if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && pass)
+                    {
+                        pr = nr;
+                        pc = nc;
+                        playerSpr.setPosition(pc * CELL, pr * CELL);
+                        battery--;
+                        turnCount++;
+                        if (turnCount % EVENT_PERIOD == 0)
+                            map.updateWind();
+
+                        if (map.isItem(pr, pc))
+                        {
+                            map.removeItem(pr, pc);
+                            itemsCollected++;
+                        }
+
+                        if (showPath)
+                            path = findPathBFS(map, {pr, pc}, map.getGoal());
+
+                        if (std::make_pair(pr, pc) == map.getGoal())
+                        {
+                            gameOver = true;
+                            gameMessage = "GANASTE";
+                        }
+                    }
+
+                    if (battery <= 0 && !gameOver)
+                    {
+                        gameOver = true;
+                        gameMessage = "SIN BATERIA";
+                    }
                 }
             }
         }
@@ -182,9 +214,15 @@ int main()
 
         if (gameOver)
         {
-            sf::Text endText(gameMessage + " - Presiona R", font, 30);
-            endText.setFillColor(sf::Color::Red);
-            endText.setPosition(COLS * CELL / 2.f - 150, ROWS * CELL / 2.f - 20);
+            sf::Text endText(gameMessage + " - Presiona R", font, 32);
+            endText.setStyle(sf::Text::Bold);
+            endText.setFillColor(gameMessage == "GANASTE" ? sf::Color::Green : sf::Color::Red);
+            endText.setOutlineColor(sf::Color::Black);
+            endText.setOutlineThickness(2);
+
+            sf::FloatRect textBounds = endText.getLocalBounds();
+            endText.setOrigin(textBounds.width / 2, textBounds.height / 2);
+            endText.setPosition(COLS * CELL / 2.f, ROWS * CELL / 2.f);
             window.draw(endText);
         }
 
