@@ -6,6 +6,7 @@
 class Grid {
 public:
     Grid(int rows, int cols, float cellSize);
+
     void draw(sf::RenderWindow& window);
 
 private:
