@@ -15,4 +15,4 @@ std::vector<std::pair<int,int>> findCollectAllPath(
     std::pair<int,int> start,
     std::pair<int,int> goal);
 
-#endif // PATH_FINDER_H
+#endif

@@ -45,6 +45,5 @@ findCollectAllPath(const Map& map,
                    std::pair<int,int> start,
                    std::pair<int,int> goal)
 {
-    // por defecto misma búsqueda
     return findPathBFS(map, start, goal);
 }

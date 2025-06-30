@@ -11,9 +11,9 @@ Map::Map(const std::string &filename, float cellSize)
     : cellSize_(cellSize)
     , windDir_(Direction::North)
     , turnCounter_(0)
-    , windInterval_(5)
+    , windInterval_(2)
 {
-    // 1) Carga el grid
+
     std::ifstream in(filename);
     if (!in) throw std::runtime_error("No se pudo abrir mapa: " + filename);
     std::string line;
@@ -30,7 +30,6 @@ Map::Map(const std::string &filename, float cellSize)
     cols_ = rows_ ? int(grid_[0].size()) : 0;
     if (!rows_ || !cols_) throw std::runtime_error("Mapa mal formateado");
 
-    // 2) Carga texturas
     struct TL { sf::Texture &tex; const char *path; };
     TL loads[] = {
         { floorTex_,   "assets/sprites/floor.png"      },
@@ -62,7 +61,6 @@ void Map::initClouds(int count) {
     clouds_.clear();
     while ((int)clouds_.size() < count) {
         int r = dr(mt), c = dc(mt);
-        // sólo sobre muros (valor 1)
         if (grid_[r][c] == 1)
             clouds_.emplace_back(c, r);
     }
@@ -84,7 +82,6 @@ void Map::moveClouds() {
             case Direction::West:  q.x--; break;
         }
         int r = q.y, c = q.x;
-        // Mueve la nube sólo si sigue siendo un muro (1)
         if (r>=0 && r<rows_ && c>=0 && c<cols_ && grid_[r][c] == 1)
             next.push_back(q);
         else
@@ -94,7 +91,6 @@ void Map::moveClouds() {
 }
 
 void Map::resetFromFile(const std::string &filename) {
-    // 1) Recarga grid_
     grid_.clear();
     std::ifstream in(filename);
     if (!in)
@@ -113,7 +109,6 @@ void Map::resetFromFile(const std::string &filename) {
     rows_ = int(grid_.size());
     cols_ = rows_ ? int(grid_[0].size()) : 0;
 
-    // 2) Reinicia viento y nubes
     turnCounter_ = 0;
     windDir_     = Direction::North;
     initClouds(6);
@@ -136,16 +131,12 @@ bool Map::isCloud(int r, int c) const {
 bool Map::isWalkable(int r, int c) const {
     if (r<0 || r>=rows_ || c<0 || c>=cols_) return false;
     int type = grid_[r][c];
-    // cualquier cosa que NO sea muro (1) es transitable:
-    // césped(0), inicio(2), meta(3), items(4)…
     if (type != 1) return true;
-    // o nube sobre muro
     if (isCloud(r,c)) return true;
     return false;
 }
 
 void Map::draw(sf::RenderWindow &window) {
-    // suelo, muros, items, meta
     for (int r=0;r<rows_;++r) {
         for (int c=0;c<cols_;++c) {
             float x=c*cellSize_, y=r*cellSize_;
@@ -155,7 +146,7 @@ void Map::draw(sf::RenderWindow &window) {
             else if (grid_[r][c]==4) { itemSpr_.setPosition(x,y); window.draw(itemSpr_); }
         }
     }
-    // nubes
+
      for (auto &p : clouds_) {
         bridgeSpr_.setPosition(p.x * cellSize_, p.y * cellSize_);
         window.draw(bridgeSpr_);

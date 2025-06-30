@@ -11,7 +11,6 @@ int main()
     srand(unsigned(time(nullptr)));
     const float CELL = 50.f;
 
-    // Carga inicial del mapa
     const std::string MAP_FILE = "maps/map1.txt";
     Map map(MAP_FILE, CELL);
     int ROWS = map.getRows(), COLS = map.getCols();
@@ -21,10 +20,8 @@ int main()
         "Escape the Grid");
     window.setFramerateLimit(60);
 
-    // Grid para las líneas
     Grid grid(ROWS, COLS, CELL);
 
-    // Sprite jugador
     sf::Texture playerTex;
     if (!playerTex.loadFromFile("assets/sprites/character.png")) {
         std::cerr << "ERROR: no pude cargar character.png\n";
@@ -34,12 +31,10 @@ int main()
     float pscale = CELL / float(playerTex.getSize().x);
     playerSpr.setScale(pscale, pscale);
 
-    // Posición inicial del jugador
     auto [sr, sc] = map.getStart();
     int pr = sr, pc = sc;
     playerSpr.setPosition(pc * CELL, pr * CELL);
 
-    // HUD
     int itemsCollected = 0;
     sf::Font font;
     if (!font.loadFromFile("assets/fonts/LiberationSans-Regular.ttf")) {
@@ -50,11 +45,9 @@ int main()
     hud.setFillColor(sf::Color::White);
     hud.setPosition(5, ROWS * CELL + 5);
 
-    // Ruta y flag
     std::vector<std::pair<int,int>> path;
     bool showPath = false;
 
-    // Botón Mostrar/Ocultar ruta
     sf::RectangleShape button({100, 30});
     button.setFillColor({70,70,70});
     button.setOutlineColor(sf::Color::White);
@@ -65,12 +58,10 @@ int main()
     btnText.setFillColor(sf::Color::White);
     btnText.setPosition(btnPos + sf::Vector2f(10,5));
 
-    // Texto viento
     sf::Text windText("", font, 20);
     windText.setFillColor(sf::Color::Cyan);
     windText.setPosition(5, ROWS * CELL + 25);
 
-    // Shape para pintar la ruta
     sf::RectangleShape stepShape({CELL - 2, CELL - 2});
     stepShape.setFillColor({255,255,0,150});
 
@@ -89,7 +80,6 @@ int main()
                 window.close();
             }
 
-            // CLICK EN BOTÓN
             if (e.type == sf::Event::MouseButtonPressed &&
                 e.mouseButton.button == sf::Mouse::Left)
             {
@@ -113,10 +103,7 @@ int main()
                 e.type == sf::Event::KeyPressed &&
                 e.key.code == sf::Keyboard::R)
             {
-                // 1) Recarga únicamente el grid interno del mapa
                 map.resetFromFile(MAP_FILE);
-
-                // 2) Reposiciona jugador e indicadores
                 std::tie(pr, pc) = map.getStart();
                 playerSpr.setPosition(pc * CELL, pr * CELL);
 
@@ -127,8 +114,6 @@ int main()
                 path.clear();
                 gameOver = false;
 
-                // El grid de líneas no cambia si ROWS/COLS son iguales. 
-                // Si cambian, habría que recrearlo:
                 ROWS = map.getRows();
                 COLS = map.getCols();
                 grid = Grid(ROWS, COLS, CELL);
@@ -142,7 +127,6 @@ int main()
                 btnText.setString("Mostrar ruta");
             }
 
-            // MOVIMIENTO DEL JUGADOR
             if (!gameOver &&
                 e.type == sf::Event::KeyPressed)
             {
@@ -185,7 +169,6 @@ int main()
             }
         }
 
-        // ACTUALIZA HUD y viento
         hud.setString(
             "Items: " + std::to_string(itemsCollected) +
             "   Batería: " + std::to_string(battery)
@@ -193,13 +176,11 @@ int main()
         const char* dirStr[] = {"Norte","Este","Sur","Oeste"};
         windText.setString("Viento: " + std::string(dirStr[map.getWindDir()]));
 
-        // DIBUJA ESCENA
         window.clear(sf::Color::Black);
         grid.draw(window);
         map.draw(window);
 
         if (showPath) {
-            // recalcula y pinta ruta cada frame
             path = findPathBFS(map, {pr,pc}, map.getGoal());
             for (auto [r,c] : path) {
                 stepShape.setPosition(c * CELL + 1, r * CELL + 1);
